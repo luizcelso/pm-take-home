@@ -10,7 +10,8 @@
     "watch": "tsc -w",
     "lint": "eslint . --ext .ts",
     "test": "jest --forceExit",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "example": "ts-node src/examples/repository-usage.ts"
   },
   "repository": {
     "type": "git",

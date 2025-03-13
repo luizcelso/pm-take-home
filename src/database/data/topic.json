@@ -1,0 +1,19 @@
+[
+  {
+    "id": "120ec902-014e-4475-b447-6a2697641eb1",
+    "createdAt": "2025-03-13T23:06:16.915Z",
+    "name": "Getting Started",
+    "content": "Welcome to the knowledge base!",
+    "updatedAt": "2025-03-13T23:06:16.915Z",
+    "version": 1
+  },
+  {
+    "id": "336b03d0-f0e4-4317-a843-0beafefcb48f",
+    "createdAt": "2025-03-13T23:06:16.915Z",
+    "name": "TypeScript Basics",
+    "content": "Learn the basics of TypeScript - Updated with more information",
+    "updatedAt": "2025-03-13T23:06:16.916Z",
+    "version": 2,
+    "parentTopicId": "120ec902-014e-4475-b447-6a2697641eb1"
+  }
+]
