@@ -10,6 +10,8 @@ export class Topic extends BaseEntity implements ITopic {
   public readonly updatedAt: Date;
   public readonly version: number;
   public readonly parentTopicId?: string;
+  public readonly previousVersionId?: string;
+  public readonly rootTopicId: string;
 
   /**
    * Creates a new Topic instance
@@ -21,6 +23,8 @@ export class Topic extends BaseEntity implements ITopic {
    * @param id Optional ID for the topic (will be generated if not provided)
    * @param createdAt Optional creation date (will use current date if not provided)
    * @param updatedAt Optional update date (will use current date if not provided)
+   * @param previousVersionId Optional ID of the previous version of this topic
+   * @param rootTopicId Optional ID of the root topic (for versioning)
    */
   constructor(
     name: string,
@@ -29,7 +33,9 @@ export class Topic extends BaseEntity implements ITopic {
     parentTopicId?: string,
     id?: string,
     createdAt?: Date,
-    updatedAt?: Date
+    updatedAt?: Date,
+    previousVersionId?: string,
+    rootTopicId?: string
   ) {
     super(id, createdAt);
     this.name = name;
@@ -37,6 +43,10 @@ export class Topic extends BaseEntity implements ITopic {
     this.version = version;
     this.parentTopicId = parentTopicId;
     this.updatedAt = updatedAt || new Date();
+    this.previousVersionId = previousVersionId;
+    // If this is the first version, the root topic ID is its own ID
+    // Otherwise, use the provided root topic ID
+    this.rootTopicId = rootTopicId || this.id;
   }
 
   /**
@@ -61,17 +71,38 @@ export class Topic extends BaseEntity implements ITopic {
    * Creates a new version of this topic with updated content
    * 
    * @param newContent The new content for the topic
+   * @param newName Optional new name for the topic
    * @returns A new Topic instance with incremented version
    */
-  public createNewVersion(newContent: string): Topic {
+  public createNewVersion(newContent: string, newName?: string): Topic {
+    const name = newName || this.name;
+    
     return new Topic(
-      this.name,
+      name,
       newContent,
       this.version + 1,
       this.parentTopicId,
-      this.id,
-      this.createdAt,
-      new Date()
+      this.id, // Keep the same ID for version continuity
+      this.createdAt, // Keep the original creation date
+      new Date(), // New update date
+      this.id,    // Current version becomes the previous version
+      this.rootTopicId // Maintain the same root topic ID
+    );
+  }
+
+  /**
+   * Creates a child topic under this topic
+   * 
+   * @param name The name of the child topic
+   * @param content The content of the child topic
+   * @returns A new Topic instance as a child of this topic
+   */
+  public createChildTopic(name: string, content: string): Topic {
+    return new Topic(
+      name,
+      content,
+      1, // Start at version 1
+      this.id // This topic is the parent
     );
   }
 
@@ -85,7 +116,9 @@ export class Topic extends BaseEntity implements ITopic {
       content: this.content,
       updatedAt: this.updatedAt.toISOString(),
       version: this.version,
-      ...(this.parentTopicId && { parentTopicId: this.parentTopicId })
+      ...(this.parentTopicId && { parentTopicId: this.parentTopicId }),
+      ...(this.previousVersionId && { previousVersionId: this.previousVersionId }),
+      rootTopicId: this.rootTopicId
     };
   }
 } 

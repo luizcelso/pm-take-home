@@ -9,4 +9,6 @@ export interface ITopic extends IEntity {
   updatedAt: Date;
   version: number;
   parentTopicId?: string; // Optional, for hierarchical structure
+  previousVersionId?: string; // Optional, for version tracking
+  rootTopicId: string; // ID of the first version of this topic
 } 
