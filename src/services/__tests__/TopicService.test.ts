@@ -352,22 +352,28 @@ describe('TopicService', () => {
     it('should get a topic tree', async () => {
       // Arrange
       const topicId = 'topic-id';
-      const topic = new Topic('Root Topic', 'Root Content');
-      const childTopic1 = new Topic('Child Topic 1', 'Child Content 1', 1, topicId);
-      const childTopic2 = new Topic('Child Topic 2', 'Child Content 2', 1, topicId);
+      const topic = new Topic('Test Topic', 'Test Content');
+      const childTopic1 = new Topic('Child Topic 1', 'Child Content 1');
+      const childTopic2 = new Topic('Child Topic 2', 'Child Content 2');
+      
+      // Set IDs for the topics
+      Object.defineProperty(topic, 'id', { value: topicId });
+      Object.defineProperty(childTopic1, 'id', { value: 'child-1' });
+      Object.defineProperty(childTopic2, 'id', { value: 'child-2' });
+      
+      // Set parent IDs for the child topics
+      Object.defineProperty(childTopic1, 'parentTopicId', { value: topicId });
+      Object.defineProperty(childTopic2, 'parentTopicId', { value: topicId });
       
       mockTopicRepository.findById.mockResolvedValue(topic);
-      mockTopicRepository.findByParentId
-        .mockResolvedValueOnce([childTopic1, childTopic2])  // First call for root's children
-        .mockResolvedValueOnce([])  // Second call for childTopic1's children
-        .mockResolvedValueOnce([]);  // Third call for childTopic2's children
+      mockTopicRepository.findAllChildrenRecursive.mockResolvedValue([childTopic1, childTopic2]);
       
       // Act
       const result = await topicService.getTopicTree(topicId, testUser);
       
       // Assert
       expect(mockTopicRepository.findById).toHaveBeenCalledWith(topicId);
-      expect(mockTopicRepository.findByParentId).toHaveBeenCalledWith(topicId);
+      expect(mockTopicRepository.findAllChildrenRecursive).toHaveBeenCalledWith(topicId);
       expect(result).toEqual({
         topic,
         children: [
@@ -377,10 +383,9 @@ describe('TopicService', () => {
       });
     });
     
-    it('should return null if topic not found', async () => {
+    it('should return null if topic is not found', async () => {
       // Arrange
       const topicId = 'non-existent-id';
-      
       mockTopicRepository.findById.mockResolvedValue(null);
       
       // Act
