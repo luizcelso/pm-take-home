@@ -177,6 +177,60 @@ npm run lint
 └── README.md                 # Project documentation
 ```
 
+## Code Quality Enforcement
+
+This project uses pre-commit hooks to enforce code quality standards and prevent problematic code from being committed to the repository.
+
+### Pre-commit Hooks
+
+Pre-commit hooks automatically run before each commit and block the commit if any issues are found. The following checks are performed:
+
+1. **Linting**: Ensures code follows the project's style guidelines
+2. **Type Checking**: Verifies TypeScript types are correct
+3. **Unit Tests**: Runs tests to catch regressions
+
+### Setup
+
+To enable pre-commit hooks, install Husky and lint-staged:
+
+```bash
+npm install --save-dev husky lint-staged
+npx husky install
+npm set-script prepare "husky install"
+```
+
+Then, add the following to your `package.json`:
+
+```json
+{
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write",
+      "jest --bail --findRelatedTests"
+    ]
+  }
+}
+```
+
+Create a pre-commit hook:
+
+```bash
+npx husky add .husky/pre-commit "npx lint-staged && npm run test"
+```
+
+### Benefits
+
+- Prevents code with errors from entering the repository
+- Ensures consistent code style across the project
+- Catches bugs early in the development process
+- Reduces the need for code review comments about style and basic errors
+- Improves overall code quality and maintainability
+
+### Customization
+
+You can customize the pre-commit hooks by modifying the `.husky/pre-commit` file and the `lint-staged` configuration in `package.json`.
+
 ## License
 
 ISC
