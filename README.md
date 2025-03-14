@@ -33,6 +33,52 @@ npm install
 cp .env.example .env
 ```
 
+## Database Setup
+
+This project uses a simple JSON file-based database for data persistence. The database files are stored in the `src/database/data` directory.
+
+### Database Structure
+
+The system uses three main data files:
+
+1. **user.json**: Stores user information including roles (Admin, Editor, Viewer)
+2. **topic.json**: Stores topics with version history and parent-child relationships
+3. **resource.json**: Stores resources linked to topics
+
+### Initial Data
+
+The repository comes with pre-populated data files that include:
+
+- **Users**: 
+  - Admin user (admin@example.com)
+  - Regular viewer user (user@example.com)
+  
+- **Topics**:
+  - "Getting Started" (root topic)
+  - "TypeScript Basics" (child topic with version history)
+  
+- **Resources**:
+  - Link to TypeScript documentation
+
+### How the Database Works
+
+The database implementation uses the following components:
+
+1. **JsonDatabase**: Handles CRUD operations on JSON files
+2. **DatabaseFactory**: Creates and manages database instances (Singleton pattern)
+3. **IDatabase**: Interface defining the database operations
+
+The system automatically initializes the database files on first use. No additional setup is required.
+
+### Customizing Data
+
+To modify the initial data:
+
+1. Edit the JSON files in `src/database/data/`
+2. Restart the application
+
+For production use, you can replace the JSON database with a real database by implementing the `IDatabase` interface.
+
 ## Development
 
 Start the development server:
@@ -79,6 +125,13 @@ npm run lint
 │   ├── controllers/          # Request handlers
 │   │   └── TopicController.ts
 │   ├── database/             # Database related code
+│   │   ├── data/             # JSON database files
+│   │   │   ├── topic.json    # Topic data
+│   │   │   ├── user.json     # User data
+│   │   │   └── resource.json # Resource data
+│   │   ├── DatabaseFactory.ts # Factory for database instances
+│   │   ├── IDatabase.ts      # Database interface
+│   │   └── JsonDatabase.ts   # JSON file implementation
 │   ├── enums/                # Enumeration types
 │   ├── examples/             # Example code
 │   ├── interfaces/           # TypeScript interfaces
