@@ -39,7 +39,7 @@ export class SecureTopicService implements ITopicService {
       throw new Error('User does not have permission to create topics');
     }
     
-    return this.topicService.createTopic(name, content, parentTopicId);
+    return this.topicService.createTopic(name, content, user, parentTopicId);
   }
 
   /**
@@ -50,7 +50,7 @@ export class SecureTopicService implements ITopicService {
    * @throws Error if the user doesn't have permission
    */
   public async getTopic(id: string, user: User): Promise<Topic | null> {
-    const topic = await this.topicService.getTopic(id);
+    const topic = await this.topicService.getTopic(id, user);
     
     if (!topic) {
       return null;
@@ -80,7 +80,7 @@ export class SecureTopicService implements ITopicService {
     user: User,
     name?: string
   ): Promise<Topic | null> {
-    const topic = await this.topicService.getTopic(id);
+    const topic = await this.topicService.getTopic(id, user);
     
     if (!topic) {
       return null;
@@ -92,7 +92,7 @@ export class SecureTopicService implements ITopicService {
       throw new Error('User does not have permission to update this topic');
     }
     
-    return this.topicService.updateTopic(id, content, name);
+    return this.topicService.updateTopic(id, content, user, name);
   }
 
   /**
@@ -103,7 +103,7 @@ export class SecureTopicService implements ITopicService {
    * @throws Error if the user doesn't have permission
    */
   public async deleteTopic(id: string, user: User): Promise<boolean> {
-    const topic = await this.topicService.getTopic(id);
+    const topic = await this.topicService.getTopic(id, user);
     
     if (!topic) {
       return false;
@@ -115,16 +115,16 @@ export class SecureTopicService implements ITopicService {
       throw new Error('User does not have permission to delete this topic');
     }
     
-    return this.topicService.deleteTopic(id);
+    return this.topicService.deleteTopic(id, user);
   }
 
   /**
-   * Gets all topics if the user has permission
+   * Gets all topics the user has permission to read
    * @param user The user requesting the topics
    * @returns Promise resolving to an array of topics
    */
   public async getAllTopics(user: User): Promise<Topic[]> {
-    const topics = await this.topicService.getAllTopics();
+    const topics = await this.topicService.getAllTopics(user);
     const strategy = TopicAccessStrategyFactory.getStrategy(user);
     
     // Filter out topics the user doesn't have permission to read
@@ -132,12 +132,12 @@ export class SecureTopicService implements ITopicService {
   }
 
   /**
-   * Gets all root topics if the user has permission
+   * Gets all root topics the user has permission to read
    * @param user The user requesting the topics
    * @returns Promise resolving to an array of root topics
    */
   public async getRootTopics(user: User): Promise<Topic[]> {
-    const topics = await this.topicService.getRootTopics();
+    const topics = await this.topicService.getRootTopics(user);
     const strategy = TopicAccessStrategyFactory.getStrategy(user);
     
     // Filter out topics the user doesn't have permission to read
@@ -145,14 +145,27 @@ export class SecureTopicService implements ITopicService {
   }
 
   /**
-   * Gets all child topics of a parent topic if the user has permission
+   * Gets all child topics for a parent topic that the user has permission to read
    * @param parentId The ID of the parent topic
    * @param user The user requesting the topics
    * @returns Promise resolving to an array of child topics
+   * @throws Error if the user doesn't have permission to read the parent topic
    */
   public async getChildTopics(parentId: string, user: User): Promise<Topic[]> {
-    const topics = await this.topicService.getChildTopics(parentId);
+    // First check if the user can read the parent topic
+    const parentTopic = await this.topicService.getTopic(parentId, user);
+    
+    if (!parentTopic) {
+      throw new Error(`Parent topic with ID ${parentId} not found`);
+    }
+    
     const strategy = TopicAccessStrategyFactory.getStrategy(user);
+    
+    if (!strategy.canReadTopic(user, parentTopic)) {
+      throw new Error('User does not have permission to read the parent topic');
+    }
+    
+    const topics = await this.topicService.getChildTopics(parentId, user);
     
     // Filter out topics the user doesn't have permission to read
     return topics.filter(topic => strategy.canReadTopic(user, topic));
@@ -171,7 +184,7 @@ export class SecureTopicService implements ITopicService {
     version: number,
     user: User
   ): Promise<Topic | null> {
-    const topic = await this.topicService.getTopicVersion(rootTopicId, version);
+    const topic = await this.topicService.getTopicVersion(rootTopicId, version, user);
     
     if (!topic) {
       return null;
@@ -187,13 +200,16 @@ export class SecureTopicService implements ITopicService {
   }
 
   /**
-   * Gets all versions of a topic if the user has permission
+   * Gets all versions of a topic that the user has permission to read
    * @param rootTopicId The ID of the root topic
    * @param user The user requesting the topics
    * @returns Promise resolving to an array of topic versions
    */
-  public async getAllTopicVersions(rootTopicId: string, user: User): Promise<Topic[]> {
-    const topics = await this.topicService.getAllTopicVersions(rootTopicId);
+  public async getAllTopicVersions(
+    rootTopicId: string,
+    user: User
+  ): Promise<Topic[]> {
+    const topics = await this.topicService.getAllTopicVersions(rootTopicId, user);
     const strategy = TopicAccessStrategyFactory.getStrategy(user);
     
     // Filter out topics the user doesn't have permission to read
@@ -211,7 +227,7 @@ export class SecureTopicService implements ITopicService {
     rootTopicId: string,
     user: User
   ): Promise<Topic | null> {
-    const topic = await this.topicService.getLatestTopicVersion(rootTopicId);
+    const topic = await this.topicService.getLatestTopicVersion(rootTopicId, user);
     
     if (!topic) {
       return null;
@@ -227,13 +243,14 @@ export class SecureTopicService implements ITopicService {
   }
 
   /**
-   * Gets a topic tree if the user has permission
+   * Gets a topic tree if the user has permission to read the topic
    * @param topicId The ID of the topic
    * @param user The user requesting the topic tree
-   * @returns Promise resolving to the topic tree
+   * @returns Promise resolving to the topic tree or null if not found
+   * @throws Error if the user doesn't have permission
    */
   public async getTopicTree(topicId: string, user: User): Promise<TopicTree | null> {
-    const topic = await this.topicService.getTopic(topicId);
+    const topic = await this.topicService.getTopic(topicId, user);
     
     if (!topic) {
       return null;
@@ -245,29 +262,32 @@ export class SecureTopicService implements ITopicService {
       throw new Error('User does not have permission to read this topic');
     }
     
-    const tree = await this.topicService.getTopicTree(topicId);
+    const tree = await this.topicService.getTopicTree(topicId, user);
     
     if (!tree) {
       return null;
     }
     
-    // Filter the tree recursively to remove topics the user doesn't have permission to read
-    return this.filterTopicTree(tree, user);
+    // Filter the tree to only include topics the user can read
+    return this.filterTopicTree(tree, user, strategy);
   }
 
   /**
-   * Filters a topic tree to remove topics the user doesn't have permission to read
+   * Filters a topic tree to only include topics the user can read
    * @param tree The topic tree to filter
    * @param user The user
+   * @param strategy The access strategy for the user
    * @returns The filtered topic tree
    */
-  private filterTopicTree(tree: TopicTree, user: User): TopicTree {
-    const strategy = TopicAccessStrategyFactory.getStrategy(user);
-    
+  private filterTopicTree(
+    tree: TopicTree,
+    user: User,
+    strategy = TopicAccessStrategyFactory.getStrategy(user)
+  ): TopicTree {
     // Filter children recursively
     const filteredChildren = tree.children
       .filter(child => strategy.canReadTopic(user, child.topic))
-      .map(child => this.filterTopicTree(child, user));
+      .map(child => this.filterTopicTree(child, user, strategy));
     
     return {
       topic: tree.topic,
@@ -288,8 +308,8 @@ export class SecureTopicService implements ITopicService {
     endTopicId: string,
     user: User
   ): Promise<Topic[] | null> {
-    const startTopic = await this.topicService.getTopic(startTopicId);
-    const endTopic = await this.topicService.getTopic(endTopicId);
+    const startTopic = await this.topicService.getTopic(startTopicId, user);
+    const endTopic = await this.topicService.getTopic(endTopicId, user);
     
     if (!startTopic || !endTopic) {
       return null;
@@ -301,13 +321,19 @@ export class SecureTopicService implements ITopicService {
       throw new Error('User does not have permission to read one of the topics');
     }
     
-    const path = await this.topicService.findPath(startTopicId, endTopicId);
+    const path = await this.topicService.findPath(startTopicId, endTopicId, user);
     
     if (!path) {
       return null;
     }
     
-    // Filter out topics the user doesn't have permission to read
-    return path.filter(topic => strategy.canReadTopic(user, topic));
+    // Check if the user can read all topics in the path
+    for (const topic of path) {
+      if (!strategy.canReadTopic(user, topic)) {
+        throw new Error('User does not have permission to read one of the topics in the path');
+      }
+    }
+    
+    return path;
   }
 } 

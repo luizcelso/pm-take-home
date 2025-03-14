@@ -102,7 +102,7 @@ export class TopicService implements ITopicService {
   /**
    * Gets all topics
    * @param user The user requesting the topics (not used in this implementation)
-   * @returns Promise resolving to an array of topics
+   * @returns Promise resolving to an array of all topics
    */
   public async getAllTopics(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -112,7 +112,7 @@ export class TopicService implements ITopicService {
   }
 
   /**
-   * Gets all root topics
+   * Gets all root topics (topics without a parent)
    * @param user The user requesting the topics (not used in this implementation)
    * @returns Promise resolving to an array of root topics
    */
@@ -124,13 +124,13 @@ export class TopicService implements ITopicService {
   }
 
   /**
-   * Gets all child topics of a parent topic
+   * Gets all child topics for a parent topic
    * @param parentId The ID of the parent topic
    * @param user The user requesting the topics (not used in this implementation)
    * @returns Promise resolving to an array of child topics
    */
   public async getChildTopics(
-    parentId: string, 
+    parentId: string,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     user: User
   ): Promise<Topic[]> {
@@ -140,7 +140,7 @@ export class TopicService implements ITopicService {
   /**
    * Gets a specific version of a topic
    * @param rootTopicId The ID of the root topic
-   * @param version The version number
+   * @param version The version number to retrieve
    * @param user The user requesting the topic (not used in this implementation)
    * @returns Promise resolving to the topic version or null if not found
    */
@@ -157,10 +157,10 @@ export class TopicService implements ITopicService {
    * Gets all versions of a topic
    * @param rootTopicId The ID of the root topic
    * @param user The user requesting the topics (not used in this implementation)
-   * @returns Promise resolving to an array of topic versions
+   * @returns Promise resolving to an array of all versions of the topic
    */
   public async getAllTopicVersions(
-    rootTopicId: string, 
+    rootTopicId: string,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     user: User
   ): Promise<Topic[]> {
@@ -171,10 +171,10 @@ export class TopicService implements ITopicService {
    * Gets the latest version of a topic
    * @param rootTopicId The ID of the root topic
    * @param user The user requesting the topic (not used in this implementation)
-   * @returns Promise resolving to the latest topic version or null if not found
+   * @returns Promise resolving to the latest version of the topic or null if not found
    */
   public async getLatestTopicVersion(
-    rootTopicId: string, 
+    rootTopicId: string,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     user: User
   ): Promise<Topic | null> {
@@ -182,50 +182,66 @@ export class TopicService implements ITopicService {
   }
 
   /**
-   * Gets a topic and all its child topics recursively
-   * @param topicId The ID of the topic
-   * @param user The user requesting the topic tree (not used in this implementation)
-   * @returns Promise resolving to the topic tree
+   * Gets a topic tree, including the topic and all its children recursively
+   * @param topicId The ID of the root topic for the tree
+   * @param user The user requesting the tree (not used in this implementation)
+   * @returns Promise resolving to the topic tree or null if the topic is not found
    */
   public async getTopicTree(
-    topicId: string, 
+    topicId: string,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     user: User
   ): Promise<TopicTree | null> {
+    // Get the topic
     const topic = await this.topicRepository.findById(topicId);
     
     if (!topic) {
       return null;
     }
     
-    return this.buildTopicTree(topic);
-  }
-
-  /**
-   * Builds a topic tree recursively
-   * @param topic The root topic
-   * @returns Promise resolving to the topic tree
-   */
-  private async buildTopicTree(topic: Topic): Promise<TopicTree> {
-    const children = await this.topicRepository.findByParentId(topic.id);
-    const childTrees: TopicTree[] = [];
+    // Get all children recursively
+    const children = await this.topicRepository.findAllChildrenRecursive(topicId);
     
-    for (const child of children) {
-      childTrees.push(await this.buildTopicTree(child));
+    // Build the tree
+    const tree: TopicTree = {
+      topic,
+      children: []
+    };
+    
+    // Map of topic ID to its tree node
+    const topicMap = new Map<string, TopicTree>();
+    topicMap.set(topic.id, tree);
+    
+    // For each child, find its parent in the map and add it to the parent's children
+    if (children && Array.isArray(children)) {
+      for (const child of children) {
+        if (!child.parentTopicId) {
+          continue; // Skip if no parent ID (shouldn't happen)
+        }
+        
+        const childTree: TopicTree = {
+          topic: child,
+          children: []
+        };
+        
+        const parentTree = topicMap.get(child.parentTopicId);
+        if (parentTree) {
+          parentTree.children.push(childTree);
+        }
+        
+        topicMap.set(child.id, childTree);
+      }
     }
     
-    return {
-      topic,
-      children: childTrees
-    };
+    return tree;
   }
 
   /**
    * Finds the shortest path between two topics
-   * @param startTopicId The ID of the start topic
-   * @param endTopicId The ID of the end topic
+   * @param startTopicId The ID of the starting topic
+   * @param endTopicId The ID of the ending topic
    * @param user The user requesting the path (not used in this implementation)
-   * @returns Promise resolving to an array of topics representing the path
+   * @returns Promise resolving to an array of topics representing the path, or null if no path exists
    */
   public async findPath(
     startTopicId: string,
