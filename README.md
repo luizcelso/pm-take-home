@@ -389,32 +389,6 @@ The tests in this project are organized into several categories:
 
 3. **End-to-End Tests**: These test the entire application flow from API endpoints to database operations.
 
-## Test Fixes
-
-The following fixes were made to ensure all tests pass:
-
-1. **TopicService Tests**:
-   - Fixed the `getTopicTree` test to properly mock the `findAllChildrenRecursive` method instead of `findByParentId`.
-   - Updated the test to set IDs and parent IDs for the topics to match the implementation.
-   - Changed the expected result structure to match the actual implementation.
-
-2. **Authentication Middleware Tests**:
-   - Fixed the mocking of the `MockUserRepository` by importing it before the auth middleware.
-   - Created a mock repository instance and configured the constructor mock to return it.
-   - Updated the assertions to match the actual implementation.
-
-3. **Route Tests**:
-   - Created a router factory to avoid loading the actual routes file, which was causing issues with binding.
-   - Implemented controller methods as inline functions to avoid binding issues.
-   - Added proper response assertions to verify the API responses.
-
-4. **App Integration Tests**:
-   - Created a mock router instead of importing the actual routes.
-   - Fixed the method signatures in the mock router to match the actual implementation.
-   - Corrected the parameter order in the `createTopic` method call.
-
-These fixes improved the test coverage and ensured that all tests pass consistently.
-
 ## Test Coverage
 
 The current test coverage is:
