@@ -97,8 +97,10 @@ npm run lint
 │   │   ├── TopicRepository.ts
 │   │   └── UserRepository.ts
 │   ├── routes/               # API routes
-│   │   ├── index.ts
-│   │   └── topicRoutes.ts
+│   │   ├── index.ts          # Central router that combines all routes
+│   │   ├── topicRoutes.ts    # Topic-related routes
+│   │   ├── userRoutes.ts     # User-related routes (placeholder)
+│   │   └── resourceRoutes.ts # Resource-related routes (placeholder)
 │   ├── services/             # Business logic
 │   │   ├── ITopicService.ts
 │   │   ├── SecureTopicService.ts
@@ -251,3 +253,21 @@ Error response format:
 - **Admin**: Can create, read, update, and delete any topic
 - **Editor**: Can create, read, and update topics, but cannot delete them
 - **Viewer**: Can only read topics
+
+## Route Organization
+
+The API routes are organized in a modular way to improve maintainability and scalability:
+
+1. **Individual Route Files**: Each resource type has its own route file:
+   - `topicRoutes.ts`: Contains all topic-related endpoints
+   - `userRoutes.ts`: Placeholder for future user-related endpoints
+   - `resourceRoutes.ts`: Placeholder for future resource-related endpoints
+
+2. **Central Router**: The `routes/index.ts` file combines all resource routes and exports them as a single router.
+
+3. **API Prefix**: All routes are mounted under the `/api` prefix in the main application.
+
+To add new routes:
+1. Create a controller for the resource
+2. Implement the routes in the corresponding route file
+3. Mount the routes in the `routes/index.ts` file
