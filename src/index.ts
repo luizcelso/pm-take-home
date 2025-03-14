@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
 import cors from 'cors';
+import routes from './routes';
 
 // Load environment variables
 dotenv.config();
@@ -16,7 +17,10 @@ app.use(cors()); // Enable CORS
 app.use(express.json()); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 
-// Routes
+// API Routes
+app.use('/api', routes);
+
+// Root route
 app.get('/', (_req: Request, res: Response): void => {
   res.json({ message: 'Welcome to the Dynamic Knowledge Base System API' });
 });
